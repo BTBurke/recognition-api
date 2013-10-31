@@ -1,0 +1,513 @@
+FORMAT: 1A
+HOST: http://recog.calltrackingmetrics.com/v1/
+
+# Speaker Recognition API
+The speaker recognition API allows the CallTrackingMetrics service to enroll examples of an organization's representatives and to subsequently identify which calls they handle by performing biometric speaker recognition.
+The recognition API will also attempt to identify the client on each call and create links between calls from the same person.
+
+# Group Authorization
+
+## API Root [/]
+The API root is namespaced behind the version number as in http://recog.calltrackingmetrics.com/v1/ for API version 1.  
+
+[TODO?] Authorization is handled via HMAC-SHA1 signing of each request and passing of the API key and signature in the authorization header.
+
+To sign a request, first construct a UTF-8 multi-line string to sign containing the method, host, and query parameters.  For example, the a GET request to **http://recog.calltrackingmetrics.com/v1/orgs/{orgID}/reps?active=true** would be:
+
+```
+    GET\n
+    recog.calltrackingmetrics.com\n
+    /v1/orgs/{orgID}/reps\n
+    active=true
+```
+where each line but the last is terminated with the newline character.  Sign the string above using HMAC-SHA1 with the secret key and then Base64 encode the string.  Pass the signed request in the Authorization headers as in:
+
+```
+    Authorization: {APIKey}:{RequestSignature}
+```
+
+### Get API version and test authentication [GET]
++ Headers
+    
+        Authorization {APIKey}:{RequestSignature}
+
++ Response 200 (application/json)
+
+        {"version": "1.0", "root": "http://recog.calltrackingmetrics.com/v1", "description": "CallTrackingMetrics Speaker Recognition Service"}
+    
+
+# Group Organizations
+Organizations are the top-level namespace under which data related to representatives, clients, and identification services are performed.
+
+## Organization Collection [/orgs]
+Organizations have the following attributes:
+
+- **id**
+- **name**
+- **created_at**
+
+### List all Organizations [GET]
++ Headers
+    
+        Authorization {APIKey}:{RequestSignature}
+
++ Response 200 (application/json)
+
+        [{
+          "id": "550e8400-e29b-41d4-a716-446655440000", "name": "Organization #1", "created_at": "2013-10-30T19:20:30-05:00"
+        }, {
+          "id": "550e8400-e29b-41d4-a716-446655440001", "name": "Organization #2", "created_at": "2013-10-30T19:20:30-05:00"
+        }]
+
+## Organization [/orgs/{orgID}]
+A single organzation and its details with the following attributes:
+
+* **id**
+* **name**
+* **created_at**
+* **links**
+        * reps
+        * clients
+        * calls
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization to perform the action on
+    
+### Get an Organization [GET]
++ Headers
+    
+        Authorization {APIKey}:{RequestSignature}
+
++ Response 200 (application/json)
+    + Body
+    
+            {"id": "550e8400-e29b-41d4-a716-446655440010",
+            "name: "Organization #3",
+            "created_at": "2013-10-30T19:20:30-05:00",
+            "links": 
+                [
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446655440010/reps", "rel": "http://schema.calltrackingmetrics.com/rep", "title": "representative"},
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446655440010/clients", "rel": "http://schema.calltrackingmetrics.com/client", "title": "clients"},
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446655440010/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"
+                ]
+            }
+
+### Create an Organization [POST]
+Create an organization.  Organizations must be created with a specific ID that should be the same as that used in the main CallTrackingMetrics database.
++ Request (application/json)
+    
+        {
+        "id": "550e8400-e29b-41d4-a716-446324440000",
+        "name": "Organization #4"
+        }
+
++ Response 201 (application/json)
+    + Body
+    
+            {
+            "id": "550e8400-e29b-41d4-a716-446324440000",
+            "name": "Organization #4"
+            "created_at": "2013-10-30T19:20:30-05:00",
+            "links": 
+                [
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446324440000/reps", "rel": "http://schema.calltrackingmetrics.com/rep", "title": "representative"},
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446324440000/clients", "rel": "http://schema.calltrackingmetrics.com/client", "title": "clients"},
+                    {"href": "http://recog.calltrackingmetrics.com/v1/550e8400-e29b-41d4-a716-446324440000/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"
+                ]
+            }
+            
+
+
+### Delete an Organization [DELETE]
++ Response 204
+
+# Group Representatives
+
+## Representatives Collection [/orgs/{orgID}/reps{?active}]
+Representatives have the following attributes:
+
+* **id**
+* **name**
+* **created_at**
+* **gender**
+* **active**
+
++ Parameters
+    + active (optional, boolean, `true`) ... Defaults to true to retreive only active representatives of the organization
+
+### Retrieve a List of All Representatives [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                { "id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Representative", "created_at": "2013-10-30T19:20:30-05:00", "gender": "male", "active": true},
+                { "id": "123d6754-e21b-32a3-a511-443224402100", "name": "Jane Representative", "created_at": "2013-10-30T19:20:30-05:00", "gender": "female", "active": true}            
+            ]
+            
+## Representatives [/orgs/{orgID}/reps/{repID}]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + repID (required, string) ... The UUID of the representative
+
+### Get a Representative [GET]
++ Response 200 (application/json)
+    
+    + Body
+
+            {
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Representative",
+                "created_at": "2013-10-30T19:20:30-05:00", 
+                "gender": "male", 
+                "active": true,
+                "links":
+                    [
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/clients", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"}
+                    ]
+            }
+
+### Create a Representative [POST]
++ Request (application/json)
+
+        {
+            "name": "Joe Representative",
+            "gender": "male"
+        }
+
++ Response 201 (application/json)
+
+    + Body
+    
+            {
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Representative",
+                "created_at": "2013-10-30T19:20:30-05:00", 
+                "gender": "male", 
+                "active": true,
+                "links":
+                    [
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/clients", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/models", "rel": "http://schema.calltrackingmetrics.com/model", "title": "model"}
+                    ]
+            }
+            
+### Delete a Representative [DELETE]
++ Response 204
+
+# Group Clients
+
+## Clients Collection [/orgs/{orgID}/clients]
+Client records are created automatically by the algorithm when an unknown voice is identified.  Client details can be updated via PUT (such as assigning a particular name to a caller.)  Clients have the following attributes:
+
+* **id**
+* **name**
+* **created_at**
+* **gender**
+
+### Retrieve a List of All Clients [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                { "id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Client", "created_at": "2013-10-30T19:20:30-05:00", "gender": "male"},
+                { "id": "123d6754-e21b-32a3-a511-443224402100", "name": "Jane Client", "created_at": "2013-10-30T19:20:30-05:00", "gender": "female"}            
+            ]
+            
+## Clients [/orgs/{orgID}/clients/{clientID}]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + clientID (required, string) ... The UUID of the client
+
+### Get a Client [GET]
++ Response 200 (application/json)
+    
+    + Body
+
+            {
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Client",
+                "created_at": "2013-10-30T19:20:30-05:00", 
+                "gender": "male", 
+                "links":
+                    [
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/reps", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/models", "rel": "http://schema.calltrackingmetrics.com/model", "title": "model"}
+                    ]
+            }
+
+### Update a Client [PUT]
+An update to a client, such as assigning a name, will trigger the algorithm to attempt to locate an existing client in the database and merge records and models.
+
++ Request (application/json)
+
+        {
+            "name": "Joe Client"
+        }
+
++ Response 200 (application/json)
+
+    + Body
+    
+            {
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Client",
+                "created_at": "2013-10-30T19:20:30-05:00", 
+                "gender": "male", 
+                "links":
+                    [
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/calls", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/clients", "rel": "http://schema.calltrackingmetrics.com/call", "title": "call"},
+                        {"href": "http://recog.calltrackingmetrics.com/v1/{orgID}/reps/{repID}/models", "rel": "http://schema.calltrackingmetrics.com/model", "title": "model"}
+                    ]
+            }
+
+# Group Models
+Models represent metadata about the recognition algorithm model of the speaker.  This data is useful for troubleshooting poor recognition performance.
+
+* **id**
+* **name**
+* **created_at**
+* **gender**
+* **mixtures**
+* **ubm_id**
+* **ubm_name**
+* **num_examples**
+* **training_source**
+* **quality**
+
+## Representative Models Collection [/orgs/{orgID}/reps/{repID}/models]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + repID (required, string) ... The UUID of the representative
+
+### Retrieve a List of All Models [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                { 
+                    "id": "550e8400-e29b-41d4-a716-446324440000",
+                    "name": "Joe Rep", 
+                    "created_at": "2013-10-30T19:20:30-05:00",
+                    "gender": "male",
+                    "mixtures": 256,
+                    "ubm_id": "ea9a64aa-aee9-4dda-8c74-e061906db267",
+                    "ubm_name": "world-male-orgspecific",
+                    "num_examples": 1,
+                    "training_source": "call-prompt-web",
+                    "quality": 90
+                }
+            ]
+            
+## Representative Model [/orgs/{orgID}/reps/{repID}/models/{modelID}]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + repID (required, string) ... The UUID of the representative
+    + modelID (required, string) ... The UUID of the model
+
+### Retrieve a Model [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Rep", 
+                "created_at": "2013-10-30T19:20:30-05:00",
+                "gender": "male",
+                "mixtures": 256,
+                "ubm_id": "ea9a64aa-aee9-4dda-8c74-e061906db267",
+                "ubm_name": "world-male-orgspecific",
+                "num_examples": 1,
+                "training_source": "call-prompt-web",
+                "quality": 90
+            }
+
+### Delete a Model [DELETE]
+In the event of poor recognition performance, a re-enrollment can occur, followed by deleting the original model.
+
++ Response 204
+
+## Client Models Collection [/orgs/{orgID}/clients/{clientID}/models]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + clientID (required, string) ... The UUID of the client
+
+### Retrieve a List of All Models [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                { 
+                    "id": "550e8400-e29b-41d4-a716-446324440000",
+                    "name": "Joe Client", 
+                    "created_at": "2013-10-30T19:20:30-05:00",
+                    "gender": "male",
+                    "mixtures": 256,
+                    "ubm_id": "ea9a64aa-aee9-4dda-8c74-e061906db267",
+                    "ubm_name": "world-male-orgspecific",
+                    "num_examples": 1,
+                    "training_source": "call-prompt-web",
+                    "quality": 90
+                }
+            ]
+            
+## Client Model [/orgs/{orgID}/clients/{clientID}/models/{modelID}]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + clientID (required, string) ... The UUID of the representative
+    + modelID (required, string) ... The UUID of the model
+
+### Retrieve a Model [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "name": "Joe Client", 
+                "created_at": "2013-10-30T19:20:30-05:00",
+                "gender": "male",
+                "mixtures": 256,
+                "ubm_id": "ea9a64aa-aee9-4dda-8c74-e061906db267",
+                "ubm_name": "world-male-orgspecific",
+                "num_examples": 1,
+                "training_source": "call-prompt-web",
+                "quality": 90
+            }
+
+### Delete a Model [DELETE]
+In the event of poor recognition performance, a re-enrollment can occur, followed by deleting the original model.
+
++ Response 204
+            
+# Group Calls
+Calls represent the entry point to remote execution of the speaker recognition API.  By creating a new call record via POST, the algorithm will run to identify the representative and the caller involved.  A PUT request for an existing resource will re-run the algorithm, possibly to take advantage of new model parameters.  The algorithm returns a list of possible representatives and clients on the call with an associated accuracy score.  The call status is either complete or pending.  A pending status indicates that the algorithm is still running and results are not yet available.
+
+* **id**
+* **data_link**
+* **created_at**
+* **hints** (optional list)
+* **rep** (list)
+    * id
+    * name
+    * accuracy
+* **client** (list)
+    * id
+    * name
+    * accuracy
+* **status**
+
+## Calls Collection [/orgs/{orgID}/calls]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+
+### Retrieve a List of All Calls [GET]
++ Response 200 (application/json)
+
+    + Body
+
+            [
+                { 
+                    "id": "550e8400-e29b-41d4-a716-446324440000",
+                    "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                    "created_at": "2013-10-30T19:20:30-05:00",
+                    "hints": [],
+                    "rep": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep", "accuracy": 95}],
+                    "client": [{"id": "650e8400-e29b-41d4-a716-446324440000", "name": "Unknown Caller", "accuracy": 75}],
+                    "status": "complete"
+                }
+            ]
+            
+## Call [/orgs/{orgID}/calls/{callID}]
+
++ Parameters
+    + orgID (required, string) ... The UUID of the organization
+    + callID (required, string) ... The UUID of a call
+
+### Retrieve a Call [GET]
++ Response 200 (application/json)
+
+    + Body
+            
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                "created_at": "2013-10-30T19:20:30-05:00",
+                "hints": [],
+                "rep": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep", "accuracy": 95}],
+                "client": [{"id": "650e8400-e29b-41d4-a716-446324440000", "name": "Unknown Caller", "accuracy": 75}],
+                "status": "complete"
+            }
+
+### Create a new call record and trigger recognition algorithm execution [POST]
++ Request (application/json)
+
+    + Body
+        
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                "hints": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep"}]
+            }        
+
++ Response 201 (application/json)
+
+    + Body
+
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                "created_at": "2013-10-30T19:20:30-05:00",
+                "hints": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep"}],
+                "rep": [],
+                "client": [],
+                "status": "pending"
+            }
+        
+### Update an existing call record and trigger recognition algorithm execution [PUT]
+This call can be useful to re-run the recognition algorithm to take advantage of new speaker models or to add a hint.
++ Request (application/json)
+
+    + Body
+        
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                "hints": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep"}]
+            }        
+
++ Response 200 (application/json)
+
+    + Body
+
+            { 
+                "id": "550e8400-e29b-41d4-a716-446324440000",
+                "data_link": "http://s3.amazonaws.com/calltrackingmetrics-data/...",
+                "created_at": "2013-10-30T19:20:30-05:00",
+                "hints": [{"id": "550e8400-e29b-41d4-a716-446324440000", "name": "Joe Rep"}],
+                "rep": [],
+                "client": [],
+                "status": "pending"
+            }
+
+### Delete a Call [DELETE]
+
++ Response 204
+
